@@ -4,9 +4,9 @@ This repository is the data feed of **https://threat2detection.netlify.app**. It
 
 - The [`site-data`](https://github.com/Halfinity/threat2detection-data/tree/site-data) branch contains the JSON files the site reads: the trending threats, each
   with its YARA-L 2.0 rule and standard SQL query, and the figures on the About page.
-- [`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) rebuilds that branch every 30 minutes from the live
-  public sources. GitHub runs scheduled jobs on a best-effort basis, so a refresh can occasionally be late; the site
-  shows when the data was last updated.
+- [`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) rebuilds that branch from the live public
+  sources. A scheduled function on the site starts it every 5 minutes; GitHub's own schedule (hourly) is the
+  backup. Each run calls only the sources that are due, as often as each publisher allows. The site shows when the data was last updated.
 
 ## Data sources and attribution
 

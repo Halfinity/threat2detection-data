@@ -6,11 +6,18 @@ name: Refresh site data
 # threat2detection.netlify.app reads those files through a same-origin proxy (/data/*), so fresh data never needs a
 # Netlify deploy. Running here keeps GitHub Actions free (public repositories have no minute limit).
 #
+# Trigger: GitHub's scheduler is best-effort (it fired only every 5-8 hours for this repository), so the primary
+# trigger is a Netlify scheduled function (frontend/netlify/functions/refresh-data.mjs in the code repository) that
+# calls workflow_dispatch every 5 minutes. The schedule below is a slower backup in case that trigger stops.
+# Each run calls only the sources that are due (`t2d pipeline --due-only`, intervals in config/sources.yaml):
+# KEV and feeds every 5 minutes with conditional requests, GitHub advisories every 10, NVD every 2 hours (NVD's
+# guidance for automated clients), EPSS every 6 hours. Unchanged code skips the lab; unchanged data skips ranking.
+#
 # Safety: no pull_request triggers (fork pull requests can never reach the deploy key), the code checkout does not
 # keep the key, and the job only writes to this repository with its own short-lived token.
 on:
   schedule:
-    - cron: "7,37 * * * *" # every 30 minutes, offset from the top of the hour when GitHub's scheduler is busiest
+    - cron: "17 * * * *" # backup only: hourly (the 5-minute trigger comes from Netlify)
   workflow_dispatch:
 
 permissions:
@@ -70,8 +77,8 @@ jobs:
       - name: Migrate
         run: mkdir -p state && t2d db upgrade
 
-      - name: Collect, test, rank, brief
-        run: t2d pipeline
+      - name: Collect what is due, test if code changed, rank if data changed
+        run: t2d pipeline --due-only
 
       - name: Prune old bookkeeping (keeps intelligence and change history)
         run: t2d prune --days 14
